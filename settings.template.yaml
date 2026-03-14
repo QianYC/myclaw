@@ -1,0 +1,40 @@
+model_router:
+  endpoint: <model endpoint>
+  apiKey: <api key>
+  model: <model name>
+
+models:
+  - model: <model name>
+    endpoint: <model endpoint>
+    apiKey: <api key>
+
+skills:
+  path: <path to skills directory>
+
+# MCP configuration
+mcp:
+  # stdio transport — local process
+  - name: <server name>
+    transport: stdio
+    command: <executable>
+    args: [<arg1>, <arg2>]
+    env:                          # optional
+      KEY: value
+
+  # sse transport — remote HTTP (legacy)
+  - name: <server name>
+    transport: sse
+    url: <sse endpoint url>
+    headers:                      # optional
+      Authorization: "Bearer <token>"
+
+  # http transport — remote HTTP (recommended)
+  - name: <server name>
+    transport: http
+    url: <http endpoint url>
+    headers:                      # optional
+      Authorization: "Bearer <token>"
+
+streaming: <enable streaming mode>
+workspace: <path to workspace directory for the agent>
+maxLoops: <maximum tool call loops>
