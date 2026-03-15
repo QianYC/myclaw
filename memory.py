@@ -10,17 +10,14 @@ class Memory(ABC):
     @abstractmethod
     def add(self, message: ChatCompletionMessageParam) -> None:
         """Append a message to memory."""
-        ...
 
     @abstractmethod
     def get_messages(self) -> list[ChatCompletionMessageParam]:
         """Return all messages as a list of ChatCompletionMessageParam."""
-        ...
 
     @abstractmethod
     def clear(self) -> None:
         """Clear all stored messages."""
-        ...
 
 
 class SlidingWindowMemory(Memory):
