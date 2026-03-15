@@ -9,7 +9,7 @@ models:
     apiKey: <api key>
 
 skills:
-  path: <path to skills directory>
+  root: <path to skills directory>
 
 # MCP configuration
 mcp:

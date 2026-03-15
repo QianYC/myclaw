@@ -23,7 +23,7 @@ class ModelConfig:
 
 @dataclass
 class SkillsConfig:
-    path: str = "skills"
+    root: str = "skills"
 
 
 @dataclass
@@ -78,7 +78,7 @@ def load_config(path: str | Path = "settings.yaml") -> AppConfig:
 
     # skills
     skills_raw = raw.get("skills") or {}
-    skills = SkillsConfig(path=skills_raw.get("path", "skills"))
+    skills = SkillsConfig(root=skills_raw.get("root", "~/.myclaw/skills"))
 
     # mcp servers
     mcp = []
