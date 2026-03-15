@@ -9,6 +9,8 @@ import yaml
 
 @dataclass
 class ModelRouterConfig:
+    """Configuration for the model router endpoint."""
+
     endpoint: str
     api_key: str
     model: str
@@ -16,6 +18,8 @@ class ModelRouterConfig:
 
 @dataclass
 class ModelConfig:
+    """Configuration for an individual LLM model."""
+
     model: str
     endpoint: str
     api_key: str
@@ -23,11 +27,15 @@ class ModelConfig:
 
 @dataclass
 class SkillsConfig:
+    """Configuration for the skills directory."""
+
     root: str = "skills"
 
 
 @dataclass
 class McpConfig:
+    """Configuration for a single MCP server connection."""
+
     name: str
     transport: str  # "stdio", "sse", or "http"
     # stdio transport
@@ -41,6 +49,8 @@ class McpConfig:
 
 @dataclass
 class AppConfig:
+    """Top-level application configuration."""
+
     model_router: Optional[ModelRouterConfig] = None
     models: list[ModelConfig] = field(default_factory=list)
     skills: SkillsConfig = field(default_factory=SkillsConfig)
