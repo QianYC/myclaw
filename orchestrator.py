@@ -7,6 +7,7 @@ from openai.types.chat import ChatCompletion, ChatCompletionMessageParam
 from config import AppConfig, load_config
 from memory import Memory, SlidingWindowMemory
 from mcp_client import McpManager, McpServer, McpTool, tools_to_openai_format
+from skill_client import SkillManager, SkillResult
 import os
 
 class MyClawOrchestrator:
@@ -20,13 +21,14 @@ class MyClawOrchestrator:
             print(f"Using workspace directory: {config.workspace}")
         
         self._loop = asyncio.new_event_loop()  # persistent loop for MCP sessions
+        self.skills = SkillManager(config)
         self.mcp = McpManager()
         self.mcp.start()
         self.parse_config(config)
         self.load_skills(config)
         self.load_tools(config)
         self.connect_models(config)
-        self.memory : Memory = SlidingWindowMemory(max_size=100)
+        self.memory : Memory = SlidingWindowMemory(max_size=1000)
         pass
 
     def parse_config(self, config: AppConfig):
@@ -36,9 +38,7 @@ class MyClawOrchestrator:
         pass
 
     def load_skills(self, config: AppConfig):
-        skills_home = config.skills.path
-        print(f"Loading skills from {skills_home}...")
-        # Implement skill loading logic here
+        self.skills.load_skills()
         pass
 
     def load_tools(self, config: AppConfig):
@@ -82,7 +82,18 @@ class MyClawOrchestrator:
     
     def chat(self, request: str) -> str:
         print("Find related skills/tools for the request...")
-        print("Put skills into system prompt...")
+        request = request.strip()
+        if request.startswith("/"):
+            skill = request.split()[0][1:]
+            print(f"Trying to match skill '{skill}'...")
+            prompt = self.skills.get_skill(skill)
+            if prompt != SkillResult.NOT_FOUND:
+                request = request[len(skill)+2:]  # remove the skill command from the request
+                print(f"Matched skill '{skill}'.")
+                self.memory.add({
+                    "role": "system",
+                    "content": prompt,
+                })
         self.memory.add({
             "role": "user",
             "content": request,
@@ -164,5 +175,7 @@ class MyClawOrchestrator:
 if __name__ == "__main__":
     config = load_config()
     orchestrator = MyClawOrchestrator(config=config)
-    orchestrator.chat("list the current dir, and read content of the first file")
+    orchestrator.chat("whats 123*456+1")
+    orchestrator.chat("/calc 123*456+1")
+    orchestrator.chat("whats 123*456+1")
     orchestrator.shutdown()
