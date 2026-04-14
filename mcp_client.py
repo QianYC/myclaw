@@ -1,19 +1,17 @@
 """MCP (Model Context Protocol) client helpers."""
 
 import asyncio
-import json
 import threading
-import traceback
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
 
-from config import McpConfig
-
 # MCP SDK imports
 from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
 from mcp.client.sse import sse_client
+from mcp.client.stdio import stdio_client
 from mcp.client.streamable_http import streamable_http_client
+
+from config import McpConfig
 
 
 @dataclass
@@ -48,7 +46,7 @@ async def _list_tools(cfg: McpConfig, session: ClientSession) -> list[McpTool]:
     ]
 
 
-class McpManager:
+class McpManager:  # pylint: disable=too-many-instance-attributes
     """Manages MCP server connections in a background thread with a single event loop.
 
     A single long-lived coroutine (_worker) processes all operations via an async
@@ -63,15 +61,18 @@ class McpManager:
         self._ready = threading.Event()
         # Will be created inside the loop
         self._queue: asyncio.Queue | None = None
-        # Mapping of tool name (<MCP server name>__<tool name>) to session for quick lookup during tool calls
+        # Maps "<server name>__<tool name>" to the session for quick lookup
         self._tool_table: dict[str, ClientSession] = {}
+        self._stack: AsyncExitStack | None = None  # set inside _worker
 
     @property
     def servers(self) -> list[McpServer]:
+        """Return the list of connected MCP servers."""
         return self._servers
 
     @property
     def tools(self) -> list[McpTool]:
+        """Return the list of tools available across all connected servers."""
         return self._tools
 
     def start(self) -> None:
@@ -104,7 +105,7 @@ class McpManager:
                 try:
                     result = await self._dispatch(op, args)
                     result_future.set_result(result)
-                except Exception as e:
+                except Exception as e:  # pylint: disable=broad-exception-caught
                     result_future.set_exception(e)
         # Stack is now closed — clean up server references
         for server in self._servers:
@@ -115,10 +116,9 @@ class McpManager:
         """Route an operation to the right handler."""
         if op == "connect":
             return await self._connect(args["cfg"])
-        elif op == "call_tool":
+        if op == "call_tool":
             return await self._call_tool(args["tool_name"], args["arguments"])
-        else:
-            raise ValueError(f"Unknown MCP operation: {op}")
+        raise ValueError(f"Unknown MCP operation: {op}")
 
     def _submit(self, op: str, args: dict):
         """Submit an operation to the worker and block until done."""
@@ -196,9 +196,11 @@ class McpManager:
         })
 
     async def _call_tool(self, tool_name: str, arguments: dict) -> str:
+        """Async implementation — runs inside the worker task."""
         session = self._tool_table.get(tool_name)
         if session is None:
-            return f"[error] Tool '{tool_name}' not found. Available tools: {list(self._tool_table.keys())}"
+            available = list(self._tool_table.keys())
+            return f"[error] Tool '{tool_name}' not found. Available tools: {available}"
         # Strip the server name prefix — MCP expects just the tool name
         raw_tool_name = tool_name.split("__", 1)[-1] if "__" in tool_name else tool_name
         try:
@@ -206,7 +208,7 @@ class McpManager:
             return "\n".join(
                 part.text for part in result.content if hasattr(part, "text")
             )
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             return f"[error] Tool '{tool_name}' failed: {type(e).__name__}: {e}"
 
     def shutdown(self) -> None:
