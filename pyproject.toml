@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "myclaw"
+version = "0.3.0"
+description = "A lightweight AI agent orchestrator with pluggable tool support."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [
+    { name = "yuchenqian" },
+]
+dependencies = [
+    "openai>=2.26.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+mcp = ["mcp>=1.0.0"]
+dev = ["pytest", "ruff"]
+
+[project.scripts]
+myclaw = "myclaw.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["myclaw*"]
