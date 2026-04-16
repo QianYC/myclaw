@@ -1,27 +1,25 @@
+"""MyclawOrchestrator – the core agent loop."""
 
 from openai import AsyncOpenAI
 import asyncio
 import importlib
-import os
-import sys
-from tool_base import get_tools, tool_registry
 import json
+import pkgutil
+
+from myclaw.tool_base import get_tools, tool_registry
+
 
 SYSTEM_PROMPT = """
-You are a person AI assitant. Your job is to handle the tasks user gives you.
+You are a personal AI assistant. Your job is to handle the tasks user gives you.
 """
 
-# Dynamically import all modules in the tools package to auto-register tools
+
 def import_all_tools():
-    import pkgutil
-    project_root = os.path.dirname(os.path.abspath(__file__))
-    if project_root not in sys.path:
-        sys.path.insert(0, project_root)
-    import tools
-    for _, mod_name, _ in pkgutil.walk_packages(tools.__path__, prefix="tools."):
+    """Discover and import all tool modules under myclaw.tools (recursively)."""
+    import myclaw.tools as tools_pkg
+    for _, mod_name, _ in pkgutil.walk_packages(tools_pkg.__path__, prefix="myclaw.tools."):
         importlib.import_module(mod_name)
 
-import_all_tools()
 
 class MyclawOrchestrator:
     def __init__(self, model_name: str, model_endpoint: str, api_key: str):
@@ -32,16 +30,12 @@ class MyclawOrchestrator:
         self.memory = [
             {"role": "system", "content": SYSTEM_PROMPT},
         ]
+        # Auto-load built-in tools
+        import_all_tools()
 
     async def agent_loop(self, user_input: str):
-        self.memory.append(
-            {
-                "role": "user",
-                "content": user_input,
-            }
-        )
+        self.memory.append({"role": "user", "content": user_input})
 
-        # Get all registered tool schemas
         tool_schemas = get_tools()
 
         while True:
@@ -53,12 +47,12 @@ class MyclawOrchestrator:
             choice = response.choices[0]
             self.memory.append(choice.message)
 
-            # No tool calls → final answer (the plan)
+            # No tool calls → final answer
             if not choice.message.tool_calls:
                 print(f"\n[Agent Output] {choice.message.content}", end="\n", flush=True)
                 break
 
-            # Process tool calls dynamically
+            # Process tool calls
             tool_results = []
             for tool_call in choice.message.tool_calls:
                 tool_name = tool_call.function.name
@@ -71,17 +65,14 @@ class MyclawOrchestrator:
                     except Exception as e:
                         result = f"[Tool Error] {e}"
                         print(result)
-                    # print(f"[{tool_name} Output]\n{result}")
                 else:
                     result = f"[Unknown tool call: {tool_name}]"
                     print(result)
-                # Append tool_result message for OpenAI function calling protocol
                 tool_results.append({
                     "role": "tool",
                     "tool_call_id": tool_call.id,
-                    "content": str(result)
+                    "content": str(result),
                 })
-            # Add all tool_result messages to memory before next round
             self.memory.extend(tool_results)
 
     async def run_async(self):
@@ -98,12 +89,3 @@ class MyclawOrchestrator:
             if not user_input:
                 continue
             await self.agent_loop(user_input)
-
-if __name__ == "__main__":
-    orchestrator = MyclawOrchestrator(
-        model_name="claude-opus-4.7",
-        model_endpoint="http://localhost:4141/",
-        api_key="your-api-key",
-    )
-    asyncio.run(orchestrator.run_async())
-
