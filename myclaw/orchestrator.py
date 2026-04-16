@@ -1,11 +1,12 @@
 """MyclawOrchestrator – the core agent loop."""
 
-from openai import AsyncOpenAI
-import asyncio
 import importlib
 import json
 import pkgutil
 
+from openai import AsyncOpenAI
+
+import myclaw.tools as tools_pkg
 from myclaw.tool_base import get_tools, tool_registry
 
 
@@ -16,12 +17,13 @@ You are a personal AI assistant. Your job is to handle the tasks user gives you.
 
 def import_all_tools():
     """Discover and import all tool modules under myclaw.tools (recursively)."""
-    import myclaw.tools as tools_pkg
     for _, mod_name, _ in pkgutil.walk_packages(tools_pkg.__path__, prefix="myclaw.tools."):
         importlib.import_module(mod_name)
 
 
 class MyclawOrchestrator:
+    """Core agent orchestrator that drives the chat/tool-use loop."""
+
     def __init__(self, model_name: str, model_endpoint: str, api_key: str):
         self.model_name = model_name
         self.model_endpoint = model_endpoint
@@ -34,6 +36,7 @@ class MyclawOrchestrator:
         import_all_tools()
 
     async def agent_loop(self, user_input: str):
+        """Run a single agent turn: append user input and process tool calls until done."""
         self.memory.append({"role": "user", "content": user_input})
 
         tool_schemas = get_tools()
@@ -62,7 +65,7 @@ class MyclawOrchestrator:
                     tool_instance = tool_cls()
                     try:
                         result = tool_instance.run(**args)
-                    except Exception as e:
+                    except Exception as e:  # pylint: disable=broad-exception-caught
                         result = f"[Tool Error] {e}"
                         print(result)
                 else:
@@ -76,6 +79,7 @@ class MyclawOrchestrator:
             self.memory.extend(tool_results)
 
     async def run_async(self):
+        """Interactive REPL loop reading user input and driving `agent_loop`."""
         while True:
             try:
                 user_input = input("[User Input] > ")

@@ -1,13 +1,20 @@
-from myclaw.tool_base import ToolBase, tool
-import subprocess
-from typing import List
+"""Cross-platform terminal command execution tool."""
+
 import platform
 import shlex
+import subprocess
+from typing import List
+
+from myclaw.tool_base import ToolBase, tool
+
 
 @tool
 class TerminalTool(ToolBase):
+    """Execute a command with arguments in the host's default shell."""
+
     name = "terminal-tool"
 
+    # pylint: disable=arguments-differ
     def run(self, cmdlet: str, args: List[str]) -> str:
         """
         Executes a command with arguments securely in OS default terminal.
@@ -29,8 +36,12 @@ class TerminalTool(ToolBase):
                 shell_cmd = ["/bin/bash", "-c", safe_cmd]
             print(f"[TerminalTool] Running: {shell_cmd}")
             result = subprocess.run(shell_cmd, capture_output=True, text=True, check=False)
-            output = f"return code: {result.returncode}\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+            output = (
+                f"return code: {result.returncode}\n"
+                f"stdout:\n{result.stdout}\n"
+                f"stderr:\n{result.stderr}"
+            )
             print("[TerminalTool] Execution completed.")
             return output.strip()
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             return f"[TerminalTool Error] {e}"

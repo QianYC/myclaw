@@ -7,11 +7,16 @@ from myclaw.orchestrator import MyclawOrchestrator
 
 
 def main():
+    """Parse CLI arguments and run the myclaw orchestrator."""
     parser = argparse.ArgumentParser(
         prog="myclaw",
         description="A lightweight AI agent orchestrator with pluggable tool support.",
     )
-    parser.add_argument("--model", default="claude-opus-4.7", help="Model name (default: claude-opus-4.7)")
+    parser.add_argument(
+        "--model",
+        default="claude-opus-4.7",
+        help="Model name (default: claude-opus-4.7)",
+    )
     parser.add_argument("--endpoint", default="http://localhost:4141/", help="Model API endpoint")
     parser.add_argument("--api-key", default="your-api-key", help="API key for the model endpoint")
     args = parser.parse_args()
