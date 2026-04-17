@@ -14,17 +14,23 @@ def main():
     )
     parser.add_argument(
         "--model",
-        default="claude-opus-4.7",
-        help="Model name (default: claude-opus-4.7)",
+        help="Model name",
+        required=True
     )
-    parser.add_argument("--endpoint", default="http://localhost:4141/", help="Model API endpoint")
-    parser.add_argument("--api-key", default="your-api-key", help="API key for the model endpoint")
+    parser.add_argument("--endpoint", help="Model API endpoint", required=True)
+    parser.add_argument("--api-key", help="API key for the model endpoint", required=True)
+    parser.add_argument(
+        "--tools-dir",
+        default=None,
+        help="Path to a directory of custom tool .py files",
+    )
     args = parser.parse_args()
 
     orchestrator = MyclawOrchestrator(
         model_name=args.model,
         model_endpoint=args.endpoint,
         api_key=args.api_key,
+        tools_dir=args.tools_dir,
     )
     asyncio.run(orchestrator.run_async())
 

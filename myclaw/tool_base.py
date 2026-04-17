@@ -3,7 +3,7 @@ Base class and class-level decorator for defining tools in a structured way.
 """
 
 import inspect
-from typing import Any, Dict, Type, get_origin, get_args
+from typing import Any, Dict, Literal, Type, get_origin, get_args
 
 # Registry to keep track of all tool classes
 tool_registry: Dict[str, Type['ToolBase']] = {}
@@ -23,6 +23,9 @@ def _type_to_schema(ann):
         return _PRIMITIVE_SCHEMAS[ann]
     origin = get_origin(ann)
     args = get_args(ann)
+    # Handle Literal types → enum
+    if origin is Literal:
+        return {"type": "string", "enum": list(args)}
     # Handle list/tuple/array
     if origin in (list, tuple) or ann is list:
         item_type = args[0] if args else str
@@ -96,6 +99,13 @@ class ToolBase:
         Main logic for the tool. Must be implemented by subclasses.
         """
         raise NotImplementedError("Tool must implement the run() method.")
+
+    def execute(self, **kwargs) -> str:
+        """Run the tool with error handling. Called by the orchestrator."""
+        try:
+            return self.run(**kwargs)
+        except Exception as e:
+            return f"[{self.name or self.__class__.__name__} Error] {e}"
 
     def get_config(self, key: str, default: Any = None) -> Any:
         """Return a configuration value provided at construction time."""

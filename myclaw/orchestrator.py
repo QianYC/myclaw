@@ -1,8 +1,13 @@
 """MyclawOrchestrator – the core agent loop."""
 
 import importlib
+import importlib.util
+from importlib.metadata import entry_points
 import json
+import os
 import pkgutil
+import sys
+from pathlib import Path
 
 from openai import AsyncOpenAI
 
@@ -15,16 +20,60 @@ You are a personal AI assistant. Your job is to handle the tasks user gives you.
 """
 
 
-def import_all_tools():
+def import_builtin_tools():
     """Discover and import all tool modules under myclaw.tools (recursively)."""
     for _, mod_name, _ in pkgutil.walk_packages(tools_pkg.__path__, prefix="myclaw.tools."):
         importlib.import_module(mod_name)
 
 
+def import_entrypoint_tools():
+    """Discover and load tool plugins registered via the 'myclaw.tools' entry point group."""
+    eps = entry_points(group="myclaw.tools")
+    for ep in eps:
+        try:
+            ep.load()  # imports the module, triggering the @tool decorator
+        except Exception as e:
+            print(f"[Warning] Failed to load entry-point tool '{ep.name}': {e}")
+
+
+def import_tools_from_directory(tools_dir: str):
+    """Load all .py tool files from a user-specified directory (recursively)."""
+    tools_path = Path(tools_dir).expanduser().resolve()
+    if not tools_path.is_dir():
+        print(f"[Warning] Tools directory not found: {tools_path}")
+        return
+    # Add the parent to sys.path so relative imports inside the folder work
+    parent = str(tools_path.parent)
+    if parent not in sys.path:
+        sys.path.insert(0, parent)
+    for root, _, files in os.walk(tools_path):
+        for fname in files:
+            if fname.endswith(".py") and not fname.startswith("__"):
+                filepath = os.path.join(root, fname)
+                mod_name = (
+                    os.path.relpath(filepath, tools_path.parent)
+                    .replace(os.sep, ".")
+                    .removesuffix(".py")
+                )
+                try:
+                    importlib.import_module(mod_name)
+                except Exception as e:
+                    print(f"[Warning] Failed to load tool '{mod_name}' from {filepath}: {e}")
+
+
+def load_all_tools(extra_tools_dir: str | None = None):
+    """Load tools from all sources: built-in, entry points, and user directory."""
+    import_builtin_tools()
+    import_entrypoint_tools()
+    if extra_tools_dir:
+        import_tools_from_directory(extra_tools_dir)
+
+
 class MyclawOrchestrator:
     """Core agent orchestrator that drives the chat/tool-use loop."""
 
-    def __init__(self, model_name: str, model_endpoint: str, api_key: str):
+    def __init__(self, model_name: str, model_endpoint: str, api_key: str,
+                 tools_dir: str | None = None):
         self.model_name = model_name
         self.model_endpoint = model_endpoint
         self.api_key = api_key
@@ -32,8 +81,8 @@ class MyclawOrchestrator:
         self.memory = [
             {"role": "system", "content": SYSTEM_PROMPT},
         ]
-        # Auto-load built-in tools
-        import_all_tools()
+        # Load tools from all sources
+        load_all_tools(extra_tools_dir=tools_dir)
 
     async def agent_loop(self, user_input: str):
         """Run a single agent turn: append user input and process tool calls until done."""
@@ -63,11 +112,7 @@ class MyclawOrchestrator:
                 tool_cls = tool_registry.get(tool_name)
                 if tool_cls is not None:
                     tool_instance = tool_cls()
-                    try:
-                        result = tool_instance.run(**args)
-                    except Exception as e:  # pylint: disable=broad-exception-caught
-                        result = f"[Tool Error] {e}"
-                        print(result)
+                    result = tool_instance.execute(**args)
                 else:
                     result = f"[Unknown tool call: {tool_name}]"
                     print(result)
