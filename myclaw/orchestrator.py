@@ -32,7 +32,7 @@ def import_entrypoint_tools():
     for ep in eps:
         try:
             ep.load()  # imports the module, triggering the @tool decorator
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             print(f"[Warning] Failed to load entry-point tool '{ep.name}': {e}")
 
 
@@ -57,7 +57,7 @@ def import_tools_from_directory(tools_dir: str):
                 )
                 try:
                     importlib.import_module(mod_name)
-                except Exception as e:
+                except Exception as e:  # pylint: disable=broad-exception-caught
                     print(f"[Warning] Failed to load tool '{mod_name}' from {filepath}: {e}")
 
 

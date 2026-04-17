@@ -9,9 +9,17 @@ from myclaw.tool_base import ToolBase, tool
 
 @tool
 class FileTool(ToolBase):
+    """Perform read/write/append/delete operations on a single file path."""
+
     name = "file"
 
-    def run(self, action: Literal["read", "write", "append", "delete"], path: str, content: str = "") -> str:
+    # pylint: disable=arguments-differ
+    def run(
+        self,
+        action: Literal["read", "write", "append", "delete"],
+        path: str,
+        content: str = "",
+    ) -> str:
         """
         Perform file operations: read, write, append, or delete.
         Args:
@@ -28,22 +36,18 @@ class FileTool(ToolBase):
                 return f"File not found: {target}"
             return target.read_text(encoding="utf-8")
 
-        elif action == "write":
+        if action in ("write", "append"):
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(content, encoding="utf-8")
-            return f"Written {len(content)} chars to {target}"
-
-        elif action == "append":
-            target.parent.mkdir(parents=True, exist_ok=True)
-            with open(target, "a", encoding="utf-8") as f:
+            mode = "w" if action == "write" else "a"
+            with open(target, mode, encoding="utf-8") as f:
                 f.write(content)
-            return f"Appended {len(content)} chars to {target}"
+            verb = "Written" if action == "write" else "Appended"
+            return f"{verb} {len(content)} chars to {target}"
 
-        elif action == "delete":
+        if action == "delete":
             if not target.exists():
                 return f"File not found: {target}"
             os.remove(target)
             return f"Deleted {target}"
 
-        else:
-            return f"Unknown action '{action}'. Use one of: read, write, append, delete."
+        return f"Unknown action '{action}'. Use one of: read, write, append, delete."

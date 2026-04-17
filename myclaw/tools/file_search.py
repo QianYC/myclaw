@@ -56,8 +56,11 @@ def _search_with_python(
 
 @tool
 class FileSearchTool(ToolBase):
+    """Search for content/keywords within files under a directory."""
+
     name = "file-search"
 
+    # pylint: disable=arguments-differ
     def run(
         self, pattern: str, directory: str = ".", is_regex: bool = False, max_results: int = 50
     ) -> str:
@@ -79,6 +82,5 @@ class FileSearchTool(ToolBase):
         if _has_ripgrep():
             print("[FileSearchTool] Using ripgrep.")
             return _search_with_ripgrep(pattern, search_dir, is_regex, max_results)
-        else:
-            print("[FileSearchTool] ripgrep not found, using Python fallback.")
-            return _search_with_python(pattern, search_dir, is_regex, max_results)
+        print("[FileSearchTool] ripgrep not found, using Python fallback.")
+        return _search_with_python(pattern, search_dir, is_regex, max_results)

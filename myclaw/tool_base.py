@@ -104,7 +104,7 @@ class ToolBase:
         """Run the tool with error handling. Called by the orchestrator."""
         try:
             return self.run(**kwargs)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             return f"[{self.name or self.__class__.__name__} Error] {e}"
 
     def get_config(self, key: str, default: Any = None) -> Any:

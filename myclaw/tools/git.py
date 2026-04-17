@@ -1,7 +1,10 @@
+"""Git command execution tool."""
+
 import subprocess
 import shlex
 
 from myclaw.tool_base import ToolBase, tool
+
 
 @tool
 class GitTool(ToolBase):
@@ -13,7 +16,8 @@ class GitTool(ToolBase):
     def run(self, args: list[str]) -> str:
         """
         Executes a git command with arguments securely in the terminal.
-        This tool takes precedence over the TerminalTool for git commands, allowing for better error handling and output formatting.
+        This tool takes precedence over the TerminalTool for git commands,
+        allowing for better error handling and output formatting.
 
         Args:
             args: List of git command arguments (e.g., ['status', '-s']).
