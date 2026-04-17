@@ -24,24 +24,21 @@ class TerminalTool(ToolBase):
         Returns:
             The output of the command (stdout + stderr).
         """
-        try:
-            system = platform.system()
-            if system == "Windows":
-                # Use PowerShell for Windows; quote each arg to handle spaces/special chars
-                quoted_args = [f'"{a}"' if ' ' in a or '"' in a else a for a in args]
-                shell_cmd = ["powershell.exe", "-Command", cmdlet] + quoted_args
-            else:
-                # Use bash for Unix-like systems; shlex.quote each part for safety
-                safe_cmd = " ".join([shlex.quote(cmdlet)] + [shlex.quote(a) for a in args])
-                shell_cmd = ["/bin/bash", "-c", safe_cmd]
-            print(f"[TerminalTool] Running: {shell_cmd}")
-            result = subprocess.run(shell_cmd, capture_output=True, text=True, check=False)
-            output = (
-                f"return code: {result.returncode}\n"
-                f"stdout:\n{result.stdout}\n"
-                f"stderr:\n{result.stderr}"
-            )
-            print("[TerminalTool] Execution completed.")
-            return output.strip()
-        except Exception as e:  # pylint: disable=broad-exception-caught
-            return f"[TerminalTool Error] {e}"
+        system = platform.system()
+        if system == "Windows":
+            # Use PowerShell for Windows; quote each arg to handle spaces/special chars
+            quoted_args = [f'"{a}"' if ' ' in a or '"' in a else a for a in args]
+            shell_cmd = ["powershell.exe", "-Command", cmdlet] + quoted_args
+        else:
+            # Use bash for Unix-like systems; shlex.quote each part for safety
+            safe_cmd = " ".join([shlex.quote(cmdlet)] + [shlex.quote(a) for a in args])
+            shell_cmd = ["/bin/bash", "-c", safe_cmd]
+        print(f"[TerminalTool] Running: {shell_cmd}")
+        result = subprocess.run(shell_cmd, capture_output=True, text=True, check=False)
+        output = (
+            f"return code: {result.returncode}\n"
+            f"stdout:\n{result.stdout}\n"
+            f"stderr:\n{result.stderr}"
+        )
+        print("[TerminalTool] Execution completed.")
+        return output.strip()
