@@ -22,9 +22,10 @@ dependencies = [
 [project.optional-dependencies]
 mcp = ["mcp>=1.0.0"]
 dev = ["pytest", "ruff"]
+benchmark = ["pytest>=7.0", "tqdm>=4.66"]
 
 [project.scripts]
 myclaw = "myclaw.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["myclaw*"]
+include = ["myclaw*", "benchmarks*"]
