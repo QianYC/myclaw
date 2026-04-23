@@ -1,6 +1,5 @@
 """Glob tool for finding files/paths by glob pattern."""
 
-import os
 from pathlib import Path
 
 from myclaw.tool_base import ToolBase, tool
@@ -8,8 +7,11 @@ from myclaw.tool_base import ToolBase, tool
 
 @tool
 class GlobTool(ToolBase):
+    """Find files and directories matching a shell-style glob pattern."""
+
     name = "glob"
 
+    # pylint: disable=arguments-differ,too-many-arguments,too-many-positional-arguments
     def run(
         self,
         pattern: str,
@@ -56,7 +58,7 @@ class GlobTool(ToolBase):
                     return 0.0
             matches.sort(key=_mtime, reverse=True)
         else:
-            matches.sort(key=lambda p: str(p))
+            matches.sort(key=str)
 
         truncated = matches[:max_results]
         lines = [str(p) for p in truncated]

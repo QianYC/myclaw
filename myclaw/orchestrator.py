@@ -197,6 +197,7 @@ class MyclawOrchestrator:
         appended to memory so runaway stdout (e.g., `find /`) doesn't grow the
         context past the endpoint's request-size limit.
         """
+        # pylint: disable=too-many-locals
         system = system_prompt if system_prompt is not None else SYSTEM_PROMPT2
         memory: list[Any] = [
             {"role": "system", "content": system},
@@ -266,7 +267,7 @@ class MyclawOrchestrator:
                     )
             else:
                 error = f"max_turns={max_turns} exhausted without final answer"
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-exception-caught
             error = f"run_task raised: {type(exc).__name__}: {exc}"
 
         return RunTaskResult(

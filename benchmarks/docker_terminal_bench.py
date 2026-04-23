@@ -102,7 +102,9 @@ def _rewrite_dockerfile(src_text: str, target_base_tag: str) -> str:
     return "\n".join(out) + "\n"
 
 
-def _docker(*args: str, timeout: int | None = None, check: bool = True) -> subprocess.CompletedProcess:
+def _docker(
+    *args: str, timeout: int | None = None, check: bool = True
+) -> subprocess.CompletedProcess:
     cp = subprocess.run(
         ["docker", *args],
         capture_output=True,
@@ -121,8 +123,13 @@ def _docker(*args: str, timeout: int | None = None, check: bool = True) -> subpr
 
 
 class DockerTerminalBench:
+    """Terminal-Bench adapter that runs each task inside its own Docker image."""
+
+    # pylint: disable=too-many-instance-attributes
+
     name = "terminal-bench-docker"
 
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         tasks_root: Path,
@@ -248,7 +255,7 @@ class DockerTerminalBench:
         t0 = time.time()
         try:
             self._build_task_image(task_dir, base_tag, image_tag)
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-exception-caught
             return RunResult(
                 output="", turns=0, tool_calls=[], tokens_in=0, tokens_out=0,
                 cost_usd=0.0, duration_s=time.time() - t0,
@@ -268,6 +275,9 @@ class DockerTerminalBench:
     def _build_task_image(self, task_dir: Path, base_tag: str, image_tag: str) -> None:
         src_dockerfile = (task_dir / "Dockerfile").read_text(encoding="utf-8")
         rewritten = _rewrite_dockerfile(src_dockerfile, base_tag)
+        # We need the file to outlive the `with` block so `docker build` can
+        # read it by path, and we unlink it ourselves in `finally`.
+        # pylint: disable=consider-using-with
         tmp = tempfile.NamedTemporaryFile(
             mode="w", suffix=".Dockerfile", delete=False, encoding="utf-8"
         )
@@ -285,6 +295,7 @@ class DockerTerminalBench:
         finally:
             os.unlink(tmp.name)
 
+    # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
     async def _run_container(
         self,
         task: Task,
@@ -322,8 +333,16 @@ class DockerTerminalBench:
             stdout, stderr, returncode, timed_out = cp.stdout, cp.stderr, cp.returncode, False
         except subprocess.TimeoutExpired as exc:
             _docker("kill", container_name, check=False)
-            stdout = (exc.stdout.decode("utf-8", errors="replace") if isinstance(exc.stdout, bytes) else (exc.stdout or ""))
-            stderr = (exc.stderr.decode("utf-8", errors="replace") if isinstance(exc.stderr, bytes) else (exc.stderr or ""))
+            stdout = (
+                exc.stdout.decode("utf-8", errors="replace")
+                if isinstance(exc.stdout, bytes)
+                else (exc.stdout or "")
+            )
+            stderr = (
+                exc.stderr.decode("utf-8", errors="replace")
+                if isinstance(exc.stderr, bytes)
+                else (exc.stderr or "")
+            )
             returncode = None
             timed_out = True
 
@@ -356,6 +375,7 @@ class DockerTerminalBench:
         """Exit code-based grading: container returned 0 iff both the agent
         and the grader succeeded. Anything else is a FAIL. `result.error`
         carries either a host-side problem or `container_exit_code=N`."""
+        del task  # grading is driven entirely by the in-container exit code
         if result.error is None:
             return Grade(
                 passed=True,

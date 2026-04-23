@@ -15,6 +15,10 @@ from .base import AgentRunner, Benchmark, Grade, RunResult, Task
 
 
 class BenchmarkRunner:
+    """Orchestrates running a benchmark's tasks, grading, and persistence."""
+
+    # pylint: disable=too-few-public-methods
+
     def __init__(self, output_dir: Path):
         self.output_dir = output_dir
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -29,6 +33,7 @@ class BenchmarkRunner:
         limit: int | None = None,
         parallelism: int = 4,
     ) -> dict[str, Any]:
+        """Run every task from `benchmark`, grade results, and return the summary."""
         tasks = list(benchmark.load_tasks(limit=limit))
         if not tasks:
             raise RuntimeError(f"{benchmark.name} produced zero tasks")
@@ -47,7 +52,7 @@ class BenchmarkRunner:
                 t0 = time.time()
                 try:
                     result = await benchmark.run_task(task, agent)
-                except Exception as exc:
+                except Exception as exc:  # pylint: disable=broad-exception-caught
                     result = RunResult(
                         output="",
                         turns=0,
@@ -60,7 +65,7 @@ class BenchmarkRunner:
                     )
                 try:
                     grade = benchmark.grade(task, result)
-                except Exception as exc:
+                except Exception as exc:  # pylint: disable=broad-exception-caught
                     grade = Grade(passed=False, score=0.0, details={"grade_error": str(exc)})
                 record = {
                     "task_id": task.id,
