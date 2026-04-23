@@ -208,3 +208,6 @@ __marimo__/
 
 # settings should keep local
 settings.yaml
+
+# benchmark run outputs
+bench_out/

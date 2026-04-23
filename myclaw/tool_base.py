@@ -91,7 +91,8 @@ class ToolBase:
     name: str = None  # Optional: override in subclass
     tool_schema: Dict[str, Any] = None
 
-    def __init__(self, **kwargs):
+    def __init__(self, orchestrator=None, **kwargs):
+        self.orchestrator = orchestrator
         self.config = kwargs
 
     def run(self, *args, **kwargs) -> Any:
