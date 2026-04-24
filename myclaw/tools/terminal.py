@@ -73,6 +73,10 @@ class TerminalTool(ToolBase):
 
         print(f"[TerminalTool] Running: {shell_cmd} (timeout={timeout_s}s)")
 
+        # Not using `with` here: the process is kept alive across try/except
+        # so we can `_kill_tree` it on timeout and drain its pipes. A context
+        # manager would immediately close the streams and reap the process.
+        # pylint: disable=consider-using-with
         process = subprocess.Popen(
             shell_cmd,
             stdout=subprocess.PIPE,

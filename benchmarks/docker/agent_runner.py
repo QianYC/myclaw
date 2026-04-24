@@ -19,6 +19,7 @@ from myclaw.orchestrator import MyclawOrchestrator
 
 
 def main() -> int:
+    """Parse args, run the orchestrator once, and emit a JSON summary."""
     p = argparse.ArgumentParser()
     p.add_argument("--prompt-file", required=True)
     p.add_argument("--model", required=True)

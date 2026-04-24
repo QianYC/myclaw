@@ -13,6 +13,8 @@ from typing import Any, Awaitable, Callable, Iterable, Protocol
 
 @dataclass
 class Task:
+    """A single benchmark task: an identifier, prompt, and optional workspace."""
+
     id: str
     prompt: str
     workspace: Path | None = None
@@ -21,6 +23,10 @@ class Task:
 
 @dataclass
 class RunResult:
+    """Structured result of running one task through the agent."""
+
+    # pylint: disable=too-many-instance-attributes
+
     output: str
     turns: int
     tool_calls: list[dict[str, Any]]
@@ -33,6 +39,8 @@ class RunResult:
 
 @dataclass
 class Grade:
+    """Grading output for a task: pass/fail, numeric score, free-form details."""
+
     passed: bool
     score: float
     details: dict[str, Any] = field(default_factory=dict)
@@ -42,10 +50,15 @@ AgentRunner = Callable[[str], Awaitable[RunResult]]
 
 
 class Benchmark(Protocol):
+    """Protocol every concrete benchmark adapter must implement."""
+
     name: str
 
-    def load_tasks(self, limit: int | None = None) -> Iterable[Task]: ...
+    def load_tasks(self, limit: int | None = None) -> Iterable[Task]:
+        """Yield tasks the runner should execute, optionally capped at `limit`."""
 
-    async def run_task(self, task: Task, agent: AgentRunner) -> RunResult: ...
+    async def run_task(self, task: Task, agent: AgentRunner) -> RunResult:
+        """Execute a single task and return its run result."""
 
-    def grade(self, task: Task, result: RunResult) -> Grade: ...
+    def grade(self, task: Task, result: RunResult) -> Grade:
+        """Grade a completed task's run result."""

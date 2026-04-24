@@ -24,6 +24,9 @@ async def _noop_agent(_prompt: str) -> RunResult:
 
 def _make_benchmark(args: argparse.Namespace):
     if args.benchmark == "terminal-bench-docker":
+        # Imported lazily so that importing this module doesn't pull in the
+        # docker-specific adapter (and its dependencies) unless requested.
+        # pylint: disable=import-outside-toplevel
         from .docker_terminal_bench import DockerTerminalBench
         return DockerTerminalBench(
             tasks_root=Path(args.tasks_dir),
@@ -37,6 +40,7 @@ def _make_benchmark(args: argparse.Namespace):
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Parse the benchmark harness CLI arguments."""
     p = argparse.ArgumentParser(description="myclaw benchmark harness")
     p.add_argument(
         "--benchmark", required=True,
@@ -69,6 +73,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """CLI entrypoint: run the selected benchmark and return a shell exit code."""
     args = parse_args(argv)
     if not args.api_key:
         print("error: --api-key (or $MYCLAW_API_KEY) is required", file=sys.stderr)
