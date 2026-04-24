@@ -1,0 +1,22 @@
+# Base image for ubuntu-24-04 Terminal-Bench tasks with myclaw pre-installed.
+# Built once; used as the `FROM` for all derived per-task images.
+FROM ghcr.io/laude-institute/t-bench/ubuntu-24-04:20250624
+
+# Install Python if the base doesn't already have a usable python3 + pip.
+RUN which python3 >/dev/null 2>&1 && which pip3 >/dev/null 2>&1 \
+ || (apt-get update \
+     && apt-get install -y --no-install-recommends python3 python3-pip \
+     && rm -rf /var/lib/apt/lists/*)
+
+# Install myclaw from the repo source.
+COPY pyproject.toml README.md LICENSE /opt/myclaw/
+COPY myclaw /opt/myclaw/myclaw/
+RUN pip3 install --no-cache-dir --break-system-packages /opt/myclaw/ \
+ || pip3 install --no-cache-dir /opt/myclaw/
+
+# Install the in-container agent driver and entrypoint.
+COPY benchmarks/docker/agent_runner.py /usr/local/bin/myclaw-oneshot
+COPY benchmarks/docker/entrypoint.sh   /usr/local/bin/myclaw-entrypoint
+RUN chmod +x /usr/local/bin/myclaw-oneshot /usr/local/bin/myclaw-entrypoint
+
+ENTRYPOINT ["/usr/local/bin/myclaw-entrypoint"]

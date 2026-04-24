@@ -1,0 +1,16 @@
+# Base image for python-3-13 Terminal-Bench tasks with myclaw pre-installed.
+# Built once; used as the `FROM` for all derived per-task images.
+FROM ghcr.io/laude-institute/t-bench/python-3-13:20250620
+
+# Install myclaw from the repo source.
+COPY pyproject.toml README.md LICENSE /opt/myclaw/
+COPY myclaw /opt/myclaw/myclaw/
+RUN pip install --no-cache-dir --break-system-packages /opt/myclaw/ \
+ || pip install --no-cache-dir /opt/myclaw/
+
+# Install the in-container agent driver and entrypoint.
+COPY benchmarks/docker/agent_runner.py /usr/local/bin/myclaw-oneshot
+COPY benchmarks/docker/entrypoint.sh   /usr/local/bin/myclaw-entrypoint
+RUN chmod +x /usr/local/bin/myclaw-oneshot /usr/local/bin/myclaw-entrypoint
+
+ENTRYPOINT ["/usr/local/bin/myclaw-entrypoint"]
